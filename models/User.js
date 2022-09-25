@@ -40,6 +40,9 @@ const UserSchema = new mongoose.Schema({
 });
 
 UserSchema.pre("save", async function () {
+  //only trigger if we're modifying the password else it would result in error
+  //can also use this.modifiedPaths()
+  if (!this.isModified("password")) return;
   const salt = await bcrpyt.genSalt(10);
   this.password = await bcrpyt.hash(this.password, salt);
 });

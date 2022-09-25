@@ -1,4 +1,3 @@
-import { useReducer } from "react";
 import {
   DISPLAY_ALERT,
   CLEAR_ALERT,
@@ -10,6 +9,9 @@ import {
   LOGIN_USER_ERROR,
   TOGGLE_SIDEBAR,
   LOGOUT_USER,
+  UPDATE_USER_BEGIN,
+  UPDATE_USER_SUCCESS,
+  UPDATE_USER_ERROR,
 } from "./action";
 import { initialState } from "./appContext";
 const reducer = (state, action) => {
@@ -94,6 +96,34 @@ const reducer = (state, action) => {
       token: null,
       userLocation: null,
       jobLocation: null,
+    };
+  }
+  if (action.type === UPDATE_USER_BEGIN) {
+    return {
+      ...state,
+      isLoading: true,
+    };
+  }
+  if (action.type === UPDATE_USER_SUCCESS) {
+    return {
+      ...state,
+      isLoading: false,
+      user: action.payload.user,
+      token: action.payload.token,
+      userLocation: action.payload.location,
+      jobLocation: action.payload.location,
+      showAlert: true,
+      alertType: "success",
+      alertText: "User Profile Update Complete!",
+    };
+  }
+  if (action.type === UPDATE_USER_ERROR) {
+    return {
+      ...state,
+      isLoading: false,
+      showAlert: true,
+      alertType: "danger",
+      alertText: action.payload.msg,
     };
   }
   throw new Error(`no such action : ${action.type}`);

@@ -11,6 +11,9 @@ import {
   LOGIN_USER_ERROR,
   TOGGLE_SIDEBAR,
   LOGOUT_USER,
+  UPDATE_USER_BEGIN,
+  UPDATE_USER_SUCCESS,
+  UPDATE_USER_ERROR,
 } from "./action";
 import axios from "axios";
 
@@ -29,6 +32,16 @@ const initialState = {
   alertText: "",
   alertType: "",
   showSidebar: false,
+  //jobs initial state
+  isEditing: false,
+  editJobId: "",
+  position: "",
+  company: "",
+  // jobLocation
+  jobTypeOptions: ["full-time", "part-time", "remote", "internship"],
+  jobType: "full-time",
+  statusOptions: ["pending", "interview", "declined"],
+  status: "pending",
 };
 
 const AppContext = React.createContext();
@@ -36,6 +49,33 @@ const AppContext = React.createContext();
 const AppProvider = ({ children }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
+  //Axios instance
+  const authFetch = axios.create({
+    baseURL: "/api/v1",
+  });
+  //request
+  authFetch.interceptors.request.use(
+    (config) => {
+      config.headers.common["Authorization"] = `Bearer ${state.token}`;
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+  //response
+  authFetch.interceptors.response.use(
+    (res) => {
+      return res;
+    },
+    (error) => {
+      if (error.response.status === 401) {
+        //logout the user if token expires
+        logoutUser();
+      }
+      return Promise.reject(error);
+    }
+  );
   const displayAlert = () => {
     dispatch({ type: DISPLAY_ALERT });
     clearAlert();
@@ -118,6 +158,35 @@ const AppProvider = ({ children }) => {
     dispatch({ type: LOGOUT_USER });
     removeUserFromLocalStorage();
   };
+
+  const updateUser = async (currentUser) => {
+    dispatch({ type: UPDATE_USER_BEGIN });
+    try {
+      const { data } = await authFetch.patch("/auth/updateUser", currentUser);
+      const { user, token, location } = data;
+      dispatch({
+        type: UPDATE_USER_SUCCESS,
+        payload: {
+          user: user,
+          location: location,
+          token: token,
+        },
+      });
+      //add user to LS after updating
+      addUserToLocalStorage({ user, token, location });
+    } catch (error) {
+      //do no display error msg if 401, else it will display on login screen due to
+      //clear alert timeout
+      if (error.response.status !== 401) {
+        dispatch({
+          type: UPDATE_USER_ERROR,
+          payload: { msg: error.response.data.msg },
+        });
+      }
+      console.log(error);
+    }
+    clearAlert();
+  };
   return (
     <AppContext.Provider
       value={{
@@ -127,6 +196,7 @@ const AppProvider = ({ children }) => {
         loginUser,
         toggleSidebar,
         logoutUser,
+        updateUser,
       }}
     >
       {children}
