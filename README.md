@@ -1,5 +1,7 @@
 Full Stack App called Jobify that helps the user to keep track of their job application process.
+
 Front-End: React, styled-components.
+
 Back-End: Node,Express,MongoDB.
 
 
